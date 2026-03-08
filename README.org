@@ -1,0 +1,111 @@
+#+title: scittle-org
+
+Org export support for [[https://github.com/babashka/scittle][Scittle]] source blocks.
+
+This package lets you write:
+
+#+begin_src org
+#+begin_src scittle :exports none
+(js/console.log "hello from scittle")
+#+end_src
+#+end_src
+
+…and when exporting to HTML, it will:
+
+1. Convert =#+begin_src scittle= blocks into:
+
+#+begin_src html
+<script type="application/x-scittle">
+...
+</script>
+#+end_src
+
+2. Inject the required runtime =<script>= tags into the exported HTML =<head>= (Scittle + optionally React/ReactDOM + scittle.reagent), *only if* the document contains scittle blocks.
+
+It also maps Org =scittle= src blocks to =clojurescript-mode= for editing (=C-c '= / =org-edit-special=).
+
+* Requirements
+
+- Emacs with Org export (=ox=, =ox-html=)
+- This package does *not* require Babel execution.
+
+* Installation
+
+** Simple =load-path= + =require=
+
+Put =scittle-org.el= somewhere on your =load-path= (or add this repo directory to =load-path=), then:
+
+#+begin_src emacs-lisp
+(require 'scittle-org)
+(scittle-org-setup)
+#+end_src
+
+** Using =use-package=
+
+If =scittle-org.el= is in a local directory (example: this repo), you can load it with =:load-path=:
+
+#+begin_src emacs-lisp
+(use-package scittle-org
+  :load-path "/path/to/larzeitlin.github.io"  ;; directory containing scittle-org.el
+  :init
+  ;; Optional customizations (set before enabling):
+  ;; (setq scittle-org-include-reagent t)
+  ;; (setq scittle-org-scittle-url "https://cdn.jsdelivr.net/npm/scittle@0.6.15/dist/scittle.js")
+  :config
+  (scittle-org-setup))
+#+end_src
+
+If you later publish it as a package (MELPA/ELPA), you can omit =:load-path=.
+
+* Usage
+
+** In Org files
+
+Write scittle blocks:
+
+#+begin_src org
+#+begin_src scittle :exports none
+(require '[reagent.core :as r]
+         '[reagent.dom :as rdom])
+
+(rdom/render [:div "hello!"] (.getElementById js/document "app"))
+#+end_src
+
+#+begin_export html
+<div id="app"></div>
+#+end_export
+#+end_src
+
+Export to HTML as usual:
+
+- =M-x org-html-export-to-html=
+- =M-x org-publish=
+
+** =:exports= behavior
+
+=scittle-org= respects the Org src block =:exports= header argument:
+
+- =:exports code= (default): show code only (no script tag)
+- =:exports none=: run only (script tag only)
+- =:exports both=: show the code block *and* emit the script tag
+
+* Customization
+
+You can customize these variables:
+
+- =scittle-org-scittle-url=
+- =scittle-org-include-reagent=
+- =scittle-org-react-url=
+- =scittle-org-react-dom-url=
+- =scittle-org-scittle-reagent-url=
+
+Example:
+
+#+begin_src emacs-lisp
+(setq scittle-org-include-reagent nil) ;; only include scittle.js
+#+end_src
+
+* Notes / design
+
+- =#+begin_src scittle= blocks are treated as /embed for export/, not Babel execution.
+- Runtime scripts are injected by an Org export final-output filter.
